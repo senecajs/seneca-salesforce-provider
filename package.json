@@ -53,6 +53,9 @@
     "seneca-promisify": ">=2"
   },
   "dependencies": {
-    "@octokit/rest": "^18.12.0"
+    "@octokit/rest": "^18.12.0",
+    "@types/jsforce": "^1.9.41",
+    "jsforce": "^1.11.0",
+    "xlsx": "^0.18.2"
   }
 }

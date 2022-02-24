@@ -1,134 +1,90 @@
 /* Copyright © 2021 Seneca Project Contributors, MIT License. */
 
+import * as jsforce from "jsforce";
+import * as fs from "fs";
+import * as path from "path";
 
-// TODO: namespace provider zone; needs seneca-entity feature
+type SalesforceConnectionOptions = {};
 
-import { Octokit } from '@octokit/rest'
-
-
-type GithubProviderOptions = {}
-
-
-/* Repo ids are of the form 'owner/name'. The internal github id field is
- * moved to github_id.
- *
- *
- */
-
-
-function GithubProvider(this: any, _options: any) {
-  const seneca: any = this
-
-  const ZONE_BASE = 'provider/github/'
-
-  let octokit: Octokit
-
-
-  // NOTE: sys- zone prefix is reserved.
+function SalesforceConnection(this: any, _options: any) {
+  const seneca: any = this;
 
   seneca
-    .message('sys:provider,provider:github,get:info', get_info)
-    .message('role:entity,cmd:load,zone:provider,base:github,name:repo',
-      load_repo)
+    .message("role:entity,cmd:load,name:account", load_account)
+    .message("role:entity,cmd:save,name:account ", save_account);
 
-    .message('role:entity,cmd:save,zone:provider,base:github,name:repo',
-      save_repo)
+  seneca.make("sys","user", closeConnection);
 
+  //Access salesforce credentials
+  const cred = JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, "../cred.json")).toString()
+  );
 
+  async function load_account(): Promise<jsforce.Connection> {
+    let conn = new jsforce.Connection({
+      loginUrl: cred.instance_url,
+    });
+    await conn.login(cred.username, cred.password);
+    return conn;
+  }
 
-  async function get_info(this: any, _msg: any) {
-    return {
-      ok: true,
-      name: 'github',
-      details: {
-        sdk: '@octokit/rest'
+  async function closeConnection(conn: any): Promise<void> {
+    await conn.logout();
+    return;
+  }
+
+  const soql = `
+    SELECT Id,
+    Name
+    FROM Account`;
+
+  async function save_account(this: any, msg: any) {
+    const conn = await load_account();
+    const accounts = await conn.query(soql);
+    console.log(`${accounts.totalSize} records returned from Salesforce.`);
+
+    const accountToUpdate: any = accounts.records.find(
+      (x: any) => x.Name === "Testing Account Name"
+    );
+    if (accountToUpdate) {
+      const response: any = await conn
+        .sobject("Account")
+        .update({ Id: accountToUpdate.Id, Name: "Voxgig Tech Comp" });
+      if (response.success) {
+        let data: any = response.data;
+        console.log(data);
+      } else {
+        console.error(response.errors[0]);
       }
     }
+    closeConnection(conn);
   }
 
-  async function load_repo(this: any, msg: any) {
-    let ent: any = null
-
-    let q: any = msg.q
-    let [ownername, reponame]: [string, string] = q.id.split('/')
-
-    let res = await octokit.rest.repos.get({
-      owner: ownername,
-      repo: reponame,
-    })
-
-    if (res && 200 === res.status) {
-      let data: any = res.data
-      data.github_id = data.id
-      data.id = q.id
-      ent = this.make$(ZONE_BASE + 'repo').data$(data)
-    }
-
-    return ent
-  }
-
-
-  async function save_repo(this: any, msg: any) {
-    let ent: any = msg.ent
-
-    let [ownername, reponame]: [string, string] = ent.id.split('/')
-
-    let data = {
-      owner: ownername,
-      repo: reponame,
-      description: ent.description
-    }
-
-    let res = await octokit.rest.repos.update(data)
-
-    if (res && 200 === res.status) {
-      let data: any = res.data
-      data.github_id = data.id
-      data.id = ownername + '/' + reponame
-      ent = this.make$(ZONE_BASE + 'repo').data$(data)
-    }
-
-    return ent
-  }
-
-
-
-  seneca.prepare(async function(this: any) {
-    let out = await this.post('sys:provider,get:key,provider:github,key:api')
+  seneca.prepare(async function (this: any) {
+    let out = await this.post(
+      "sys:provider,get:key,provider:salesforce,key:api"
+    );
     if (!out.ok) {
-      this.fail('api-key-missing')
+      this.fail("api-key-missing");
     }
 
     let config = {
-      auth: out.value
-    }
+      auth: out.value,
+    };
 
-    octokit = new Octokit(config)
-  })
-
-
-  return {
-    exports: {
-      native: () => ({
-        octokit
-      })
-    }
-  }
+    return config;
+  });
 }
-
 
 // Default options.
-const defaults: GithubProviderOptions = {
+const defaults: SalesforceConnectionOptions = {
+  debugger: false,
+};
 
-  // TODO: Enable debug logging
-  debug: false
-}
+Object.assign(SalesforceConnection, { defaults });
 
+export default SalesforceConnection;
 
-Object.assign(GithubProvider, { defaults })
-
-export default GithubProvider
-
-if ('undefined' !== typeof (module)) {
-  module.exports = GithubProvider
+if ("undefined" !== typeof module) {
+  module.exports = SalesforceConnection;
 }

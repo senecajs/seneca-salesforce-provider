@@ -55,7 +55,7 @@
   "dependencies": {
     "@octokit/rest": "^18.12.0",
     "@types/jsforce": "^1.9.41",
-    "jsforce": "^1.11.0",
+    "jsforce": "^3.1.0",
     "xlsx": "^0.18.2"
   }
 }

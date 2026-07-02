@@ -3,7 +3,6 @@
 
 # @seneca/salesforce-provider
 
-[![npm version](https://img.shields.io/npm/v/@seneca/salesforce-provider.svg)](https://npmjs.com/package/@seneca/salesforce-provider)
 [![build](https://github.com/senecajs/seneca-salesforce-provider/actions/workflows/build.yml/badge.svg)](https://github.com/senecajs/seneca-salesforce-provider/actions/workflows/build.yml)
 [![Known Vulnerabilities](https://snyk.io/test/github/senecajs/seneca-salesforce-provider/badge.svg)](https://snyk.io/test/github/senecajs/seneca-salesforce-provider)
 [![Coverage Status](https://coveralls.io/repos/github/senecajs/seneca-github-provider/badge.svg?branch=main)](https://coveralls.io/github/senecajs/seneca-github-provider?branch=main)

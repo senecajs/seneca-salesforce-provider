@@ -5,9 +5,7 @@
 
 [![build](https://github.com/senecajs/seneca-salesforce-provider/actions/workflows/build.yml/badge.svg)](https://github.com/senecajs/seneca-salesforce-provider/actions/workflows/build.yml)
 [![Known Vulnerabilities](https://snyk.io/test/github/senecajs/seneca-salesforce-provider/badge.svg)](https://snyk.io/test/github/senecajs/seneca-salesforce-provider)
-[![Coverage Status](https://coveralls.io/repos/github/senecajs/seneca-github-provider/badge.svg?branch=main)](https://coveralls.io/github/senecajs/seneca-github-provider?branch=main)
 [![DeepScan grade](https://deepscan.io/api/teams/5016/projects/19462/branches/505954/badge/grade.svg)](https://deepscan.io/dashboard#view=project&tid=5016&pid=19462&bid=505954)
-[![Maintainability](https://api.codeclimate.com/v1/badges/f76e83896b731bb5d609/maintainability)](https://codeclimate.com/github/senecajs/seneca-github-provider/maintainability)
 
 | ![Voxgig](https://www.voxgig.com/res/img/vgt01r.png) | This open source module is sponsored and supported by [Voxgig](https://www.voxgig.com). |
 |---|---|
@@ -17,8 +15,6 @@
 ```sh
 $ npm install @seneca/salesforce-provider
 ```
-
-
 
 <!--START:options-->
 
@@ -76,21 +72,15 @@ If you're using this module and need help, you can:
 
 * `debug` : boolean <i><small>false</small></i>
 
-
 Set plugin options when loading with:
 ```js
 
-
 seneca.use('GithubProvider', { name: value, ... })
-
 
 ```
 
-
 <small>Note: <code>foo.bar</code> in the list above means 
 <code>{ foo: { bar: ... } }</code></small> 
-
-
 
 <!--END:options-->
 
@@ -102,7 +92,6 @@ seneca.use('GithubProvider', { name: value, ... })
 * [role:entity,base:github,cmd:save,name:repo,zone:provider](#-roleentitybasegithubcmdsavenamerepozoneprovider-)
 * [sys:provider,get:info,provider:github](#-sysprovidergetinfoprovidergithub-)
 
-
 <!--END:action-list-->
 
 <!--START:action-desc-->
@@ -113,24 +102,17 @@ seneca.use('GithubProvider', { name: value, ... })
 
 Load GitHub repository data into an entity.
 
-
-
 ----------
 ### &laquo; `role:entity,base:github,cmd:save,name:repo,zone:provider` &raquo;
 
 Update GitHub repository data from an entity.
-
-
 
 ----------
 ### &laquo; `sys:provider,get:info,provider:github` &raquo;
 
 Get information about the provider.
 
-
-
 ----------
-
 
 <!--END:action-desc-->
 

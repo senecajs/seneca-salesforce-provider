@@ -1,5 +1,5 @@
 {
-  "name": "@seneca/github-provider",
+  "name": "@seneca/salesforce-provider",
   "version": "0.2.0",
   "main": "dist/github-provider.js",
   "type": "commonjs",

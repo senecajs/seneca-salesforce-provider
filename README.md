@@ -1,130 +1,184 @@
-![Seneca](http://senecajs.org/files/assets/seneca-logo.png)
-> A [Seneca.js](http://senecajs.org) plugin
+![Seneca Salesforce-Provider](http://senecajs.org/files/assets/seneca-logo.png)
 
-# @seneca/salesforce-provider
+> _Seneca Salesforce-Provider_ is a plugin for [Seneca](http://senecajs.org)
+
+Provides access to the Salesforce Account sObject API using the Seneca _provider_
+convention. Salesforce Account sObject entities are represented as Seneca entities so that
+they can be accessed using the Seneca entity API and messages.
+
+Requests are handled by the [Salesforce Account sObject SDK](https://github.com/voxgig-sdk/salesforce-sdk),
+which is generated from the API's OpenAPI specification. This plugin is
+generated from the same specification by
+[@voxgig/sdkgen](https://github.com/voxgig/sdkgen) — do not edit it by hand,
+change the model and regenerate.
+
+See [seneca-entity](https://github.com/senecajs/seneca-entity) and the [Seneca Data
+Entities
+Tutorial](https://senecajs.org/docs/tutorials/understanding-data-entities.html)
+for more details on the Seneca entity API.
 
 [![build](https://github.com/senecajs/seneca-salesforce-provider/actions/workflows/build.yml/badge.svg)](https://github.com/senecajs/seneca-salesforce-provider/actions/workflows/build.yml)
-[![Known Vulnerabilities](https://snyk.io/test/github/senecajs/seneca-salesforce-provider/badge.svg)](https://snyk.io/test/github/senecajs/seneca-salesforce-provider)
 
-| ![Voxgig](https://www.voxgig.com/res/img/vgt01r.png) | This open source module is sponsored and supported by [Voxgig](https://www.voxgig.com). |
-|---|---|
+| This open source module is sponsored and supported by [Voxgig](https://voxgig.com). |
+| --- |
 
-## Install
 
-```sh
-$ npm install @seneca/salesforce-provider
-```
+<!--START:SECTION:intro-->
+<!--END:SECTION:intro-->
 
-<!--START:options-->
+
+## Documentation
+
+Full documentation lives in [`doc/`](doc/README.md) and follows the
+[Diátaxis](https://diataxis.fr) framework:
+
+| Document | Purpose |
+| -------- | ------- |
+| [Tutorial](doc/tutorial.md) | Start here. Build a working script from an empty folder. |
+| [How-to guides](doc/how-to.md) | Recipes for specific tasks. |
+| [Reference](doc/reference.md) | Every pattern, entity, option and export. |
+| [Explanation](doc/explanation.md) | Why the plugin is designed this way. |
+
 
 ## Quick Example
 
 ```js
+const Seneca = require('seneca')
 
-// Setup - get the key value (<SECRET>) separately from a vault or
-// environment variable.
-Seneca()
+const seneca = Seneca()
+  .use('promisify')
+  .use('entity')
+  .use('env', { var: { $SALESFORCE_APIKEY: '' } })
   .use('provider', {
     provider: {
-      github: {
-        keys: {
-          api: {
-            value: '<SECRET>'
-          },
-        }
-      }
-    }
+      salesforce: {
+        keys: { apikey: { value: '$SALESFORCE_APIKEY' } },
+      },
+    },
   })
-  .use('github-provider')
+  .use('@seneca/salesforce-provider')
 
-let repo = await seneca.entity('provider/github/repo')
-  .load$('senecajs/github-api-test')
+await seneca.ready()
 
-Console.log('REPO DATA', repo)
-
-repo.description = 'New description'
-repo = await repo.save$()
-
-Console.log('UPDATED DATA', repo)
-
+const accounts = await seneca
+  .entity('provider/salesforce/account').list$()
+const account = await seneca
+  .entity('provider/salesforce/account').load$('some-id')
 ```
+
+
+## Install
+
+```sh
+npm install @seneca/salesforce-provider
+```
+
+This plugin expects the Seneca host framework to be present:
+
+```sh
+npm install seneca seneca-entity seneca-promisify @seneca/provider @seneca/env
+```
+
+
+## Options
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `sdk` | object | Passed straight to the `SalesforceSDK` constructor. Most usefully `base`, to point at a server. |
+| `test` | boolean | Run the SDK in offline test mode (in-memory mock transport). |
+| `testopts` | object | Seed and options for the mock, used only when `test` is true. |
+
+
+## Entities
+
+Each API entity is exposed as a Seneca entity under
+`provider/salesforce/<entity>`.
+
+| Seneca entity | Commands | Fields |
+| --- | --- | --- |
+| `provider/salesforce/account` | `list$`, `load$`, `save$`, `remove$` | — |
+
+
+## Action Patterns
+
+Every message pattern this plugin registers. The entity actions are the ones
+`seneca-entity` dispatches to when you call `list$` / `load$` / `save$` /
+`remove$` on a canon below — you rarely post them by hand, but they are what
+appears in a Seneca log, and a plugin that documents one of nine is a plugin
+whose logs cannot be read.
+
+| Pattern | Description |
+| --- | --- |
+| `sys:provider,provider:salesforce,get:info` | Plugin and SDK version information. |
+| `sys:entity,cmd:list,zone:provider,base:salesforce,name:account` | List records. |
+| `sys:entity,cmd:load,zone:provider,base:salesforce,name:account` | Load one record. |
+| `sys:entity,cmd:save,zone:provider,base:salesforce,name:account` | Create or update a record. |
+| `sys:entity,cmd:remove,zone:provider,base:salesforce,name:account` | Remove a record. |
+
+
 
 ## More Examples
 
-See [test/](test/) for more usage examples.
+### Offline testing
+
+The SDK ships an in-memory mock transport, so this plugin can be exercised
+with no server:
+
+```js
+.use('@seneca/salesforce-provider', { test: true, testopts: { entity: { ... } } })
+```
+
+`testopts` is passed straight to the SDK's test constructor; `entity`
+seeds the mock store. See `test/seed.js` for the shape.
+
 
 ## Motivation
 
-A [Seneca.js](http://senecajs.org) plugin.
+Applications rarely talk to one external service, and each service usually
+arrives with its own client library, authentication style and error
+conventions. That variety leaks into application code and makes it harder to
+test.
+
+The Seneca provider convention removes the variety: every external service
+becomes a Seneca entity reached with `list$`, `load$`, `save$` and
+`remove$`, so application code has one shape regardless of what it talks to.
+
+The SDK underneath arrives at a similar conclusion from the other side — it
+deliberately exposes entities rather than HTTP routes. This plugin is the
+short bridge between the two.
+
 
 ## Support
 
-If you're using this module and need help, you can:
+- Issues and bugs: [GitHub issues](https://github.com/senecajs/seneca-salesforce-provider/issues)
+- Seneca community: [senecajs.org](http://senecajs.org)
 
-- Post a [github issue](https://github.com/senecajs/seneca-salesforce-provider/issues)
-- Tweet to [@senecajs](http://twitter.com/senecajs)
-- Ask on the [Gitter](https://gitter.im/senecajs/seneca)
 
 ## API
 
-### Options
+### Plugin export: `SalesforceProvider/sdk`
 
-* `debug` : boolean <i><small>false</small></i>
+Returns the configured `SalesforceSDK` instance, for the operations
+the entity API does not cover:
 
-Set plugin options when loading with:
 ```js
-
-seneca.use('GithubProvider', { name: value, ... })
-
+const sdk = seneca.export('SalesforceProvider/sdk')()
 ```
 
-<small>Note: <code>foo.bar</code> in the list above means 
-<code>{ foo: { bar: ... } }</code></small> 
-
-<!--END:options-->
-
-<!--START:action-list-->
-
-### Action Patterns
-
-* [role:entity,base:github,cmd:load,name:repo,zone:provider](#-roleentitybasegithubcmdloadnamerepozoneprovider-)
-* [role:entity,base:github,cmd:save,name:repo,zone:provider](#-roleentitybasegithubcmdsavenamerepozoneprovider-)
-* [sys:provider,get:info,provider:github](#-sysprovidergetinfoprovidergithub-)
-
-<!--END:action-list-->
-
-<!--START:action-desc-->
-
-### Action Descriptions
-
-### &laquo; `role:entity,base:github,cmd:load,name:repo,zone:provider` &raquo;
-
-Load GitHub repository data into an entity.
-
-----------
-### &laquo; `role:entity,base:github,cmd:save,name:repo,zone:provider` &raquo;
-
-Update GitHub repository data from an entity.
-
-----------
-### &laquo; `sys:provider,get:info,provider:github` &raquo;
-
-Get information about the provider.
-
-----------
-
-<!--END:action-desc-->
 
 ## Contributing
 
-The [Senecajs org](https://github.com/senecajs/) encourages open participation. If you feel you can help in any way, be it with documentation, examples, extra testing, or new features please get in touch.
+This plugin is GENERATED. Changes belong in the SDK project's model and
+components, not here — anything edited in this repository is overwritten by
+the next generation run.
 
-### Running tests
+The [Senecajs org](http://senecajs.org) encourages open participation. If you
+feel you can help in any way, be it with bug reporting, documentation,
+examples, extra testing, or new features, please get in touch.
 
-```sh
-npm run test
-```
 
 ## Background
 
-Part of the [Senecajs org](https://github.com/senecajs/).
+Generated by [@voxgig/sdkgen](https://github.com/voxgig/sdkgen) from the
+Salesforce Account sObject API definition, against the
+[@voxgig-sdk/salesforce](https://www.npmjs.com/package/@voxgig-sdk/salesforce) SDK.
